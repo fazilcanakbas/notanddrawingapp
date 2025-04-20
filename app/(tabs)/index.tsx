@@ -14,8 +14,8 @@ const Stack = createStackNavigator();
 
           <View style={{ flex: 1 }}>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="NotesList" component={NotesListScreen} />
               <Stack.Screen name="Drawing" component={DrawingScreen} />
-              <Stack.Screen name="NotesList" component={NotesListScreen} />
               <Stack.Screen name="PdfPicker" component={PdfPickerScreen}/>
             </Stack.Navigator>
           </View>

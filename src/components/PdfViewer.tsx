@@ -1,10 +1,10 @@
-import React from "react";
-import { View, StyleSheet, Dimensions, ViewStyle } from "react-native";
-import Pdf from "react-native-pdf";
+import React, { useState } from "react";
+import { View, StyleSheet, Dimensions, ViewStyle, Image, Text } from "react-native";
+import * as FileSystem from "expo-file-system";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 const DRAW_AREA_SIZE = width * 0.92;
-const DRAW_AREA_HEIGHT = 400;
+const DRAW_AREA_HEIGHT = height * 0.5;
 
 type PdfViewerProps = {
   uri: string;
@@ -12,34 +12,53 @@ type PdfViewerProps = {
 };
 
 export default function PdfViewer({ uri, style }: PdfViewerProps) {
+  const [pageNumber, setPageNumber] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // PDF görüntüleme için bir placeholder gösterme
+  // Gerçek bir PDF görüntüleyici implementasyonu için daha gelişmiş bir çözüm gerekebilir
   return (
     <View style={[styles.container, style]}>
-      <Pdf
-        source={{ uri }}
-        style={styles.pdf}
-        scale={1.0}
-        spacing={0}
-        minScale={1.0}
-        maxScale={3.0}
-        fitPolicy={0}
-        trustAllCerts={true}
-        enablePaging={false}
-      />
+      {/* PDF'in ilk sayfasının önizlemesi için bir placeholder */}
+      <View style={styles.pdfPlaceholder}>
+        <Text style={styles.pdfText}>PDF İçeriği</Text>
+        <Image 
+          source={{ uri: FileSystem.documentDirectory + 'pdf_thumbnail.png' }} 
+          style={styles.thumbnailImage}
+          defaultSource={require('../../assets/pdf_placeholder.png')}
+        />
+      </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     width: DRAW_AREA_SIZE,
     height: DRAW_AREA_HEIGHT,
     backgroundColor: "#fff",
-    overflow: "hidden",
-    borderRadius: 16,
+    position: "absolute",
+    zIndex: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  pdf: {
+  pdfPlaceholder: {
     flex: 1,
-    width: DRAW_AREA_SIZE,
-    height: DRAW_AREA_HEIGHT,
-    borderRadius: 16,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
   },
+  pdfText: {
+    fontSize: 18,
+    color: '#666',
+    marginBottom: 10,
+  },
+  thumbnailImage: {
+    width: DRAW_AREA_SIZE * 0.7,
+    height: DRAW_AREA_HEIGHT * 0.7,
+    resizeMode: 'contain',
+  }
 });

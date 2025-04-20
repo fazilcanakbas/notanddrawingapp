@@ -1,17 +1,40 @@
 import React, { useEffect, useState } from "react";
-import { View, FlatList, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { View, FlatList, TouchableOpacity, Text, StyleSheet, Image } from "react-native";
 import { getNotes } from "../utils/storage";
-import { useIsFocused, useNavigation } from "@react-navigation/native";
-import { NavigationProp, ParamListBase } from "@react-navigation/native";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function NotesListScreen({navigation}) {
   const [notes, setNotes] = useState<any[]>([]);
-  // const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const isFocused = useIsFocused();
 
   useEffect(() => {
-    getNotes().then(setNotes);
+    if (isFocused) {
+      loadNotes();
+    }
   }, [isFocused]);
+
+  const loadNotes = async () => {
+    try {
+      const savedNotes = await getNotes();
+      setNotes(savedNotes || []);
+    } catch (error) {
+      console.error("Notlar yüklenirken hata oluştu:", error);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const openNote = (note) => {
+    navigation.navigate("Drawing", { 
+      noteId: note.id,
+      isEditing: true,
+      pdfUri: note.pdfUri,
+      initialImageUri: note.imageUri
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -22,13 +45,19 @@ export default function NotesListScreen({navigation}) {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.noteItem}
-            // onPress={() => navigation.navigate("NoteDetail", { noteId: item.id })}
+            onPress={() => openNote(item)}
           >
-            <Text style={styles.noteText}>{item.title}</Text>
-            {item.pdfUri && <Text style={styles.pdfLabel}>PDF</Text>}
+            <View style={styles.noteContent}>
+              <Text style={styles.noteText}>{item.title || "İsimsiz Not"}</Text>
+              <Text style={styles.noteDate}>{formatDate(item.createdAt || new Date())}</Text>
+            </View>
+            <View style={styles.noteIndicators}>
+              {item.pdfUri && <Text style={styles.pdfLabel}>PDF</Text>}
+              {item.imageUri && <View style={styles.imageIndicator} />}
+            </View>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text style={{ color: "#888", textAlign: "center", marginTop: 30 }}>Kayıtlı not yok.</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>Kayıtlı not yok.</Text>}
       />
       <TouchableOpacity
         style={styles.newNoteBtn}
@@ -45,9 +74,18 @@ export default function NotesListScreen({navigation}) {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: "#f5f6fa" },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16 },
+  container: { 
+    flex: 1, 
+    padding: 24, 
+    backgroundColor: "#f5f6fa" 
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: "bold", 
+    marginBottom: 16 
+  },
   noteItem: {
     padding: 20,
     backgroundColor: "#fff",
@@ -55,15 +93,64 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  noteText: { fontSize: 18, flex: 1 },
-  pdfLabel: { color: "#5561fa", fontWeight: "bold", marginLeft: 8 },
+  noteContent: {
+    flex: 1,
+  },
+  noteText: { 
+    fontSize: 18,
+  },
+  noteDate: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 4,
+  },
+  noteIndicators: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pdfLabel: { 
+    color: "#5561fa", 
+    fontWeight: "bold", 
+    marginLeft: 8 
+  },
+  imageIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4cd964',
+    marginLeft: 8,
+  },
+  emptyText: { 
+    color: "#888", 
+    textAlign: "center", 
+    marginTop: 30 
+  },
   newNoteBtn: {
     marginTop: 16,
     padding: 14,
     borderRadius: 12,
     backgroundColor: "#5561fa",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  btnText: { color: "#fff", fontWeight: "bold" },
+  btnText: { 
+    color: "#fff", 
+    fontWeight: "bold" 
+  },
 });
