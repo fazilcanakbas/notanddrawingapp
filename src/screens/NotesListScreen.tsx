@@ -27,7 +27,7 @@ export default function NotesListScreen({navigation}) {
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
-  const openNote = (note) => {
+  const openNote = (note: { id: any; pdfUri: any; imageUri: any; }) => {
     navigation.navigate("Drawing", { 
       noteId: note.id,
       isEditing: true,
