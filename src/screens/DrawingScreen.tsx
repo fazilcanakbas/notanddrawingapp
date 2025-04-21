@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, Dimensions, GestureResponderEvent, TouchableOpacity, Text, Alert, TextInput, ScrollView } from "react-native";
+import { View, StyleSheet, Dimensions, GestureResponderEvent, TouchableOpacity, Text, Alert, TextInput, ScrollView, ActivityIndicator } from "react-native";
 import { Canvas, Path, Skia, useCanvasRef, Image, useImage } from "@shopify/react-native-skia";
 import * as MediaLibrary from "expo-media-library";
 import * as FileSystem from "expo-file-system";
@@ -15,8 +15,6 @@ type SkiaPath = ReturnType<typeof Skia.Path.Make>;
 
 const COLORS = ["#ff9eb6", "#4cd964", "#5ac8fa", "#007aff", "#ff3b30", "#ffcc00", "#000000", "#ffffff"];
 const STROKE_WIDTHS = [2, 4, 8, 12, 16];
-
-
 
 enum DrawMode {
   DRAW = "draw",
@@ -54,6 +52,8 @@ export default function DrawingScreen({ route, navigation }) {
   const [drawMode, setDrawMode] = useState<DrawMode>(DrawMode.DRAW);
   const [canvasHeight, setCanvasHeight] = useState(MAX_CANVAS_HEIGHT);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [pdfLoading, setPdfLoading] = useState(true);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   
   const canvasRef = useCanvasRef();
   const backgroundImage = useImage(initialImageUri);
@@ -109,6 +109,26 @@ export default function DrawingScreen({ route, navigation }) {
     
     loadNote();
   }, [noteId]);
+
+  useEffect(() => {
+    if (pdfUri) {
+      setPdfLoading(true);
+      setPdfError(null);
+      console.log("PDF URI ayarlandı:", pdfUri);
+    }
+  }, [pdfUri]);
+
+  const handlePdfLoaded = () => {
+    console.log("PDF başarıyla yüklendi!");
+    setPdfLoading(false);
+    setPdfError(null);
+  };
+
+  const handlePdfError = (error) => {
+    console.error("PDF yükleme hatası:", error);
+    setPdfLoading(false);
+    setPdfError(error);
+  };
 
   const handleTouchStart = (event: GestureResponderEvent) => {
     if (drawMode === DrawMode.NAVIGATE) return;
@@ -168,7 +188,8 @@ export default function DrawingScreen({ route, navigation }) {
   const handleScroll = (event) => {
     setScrollPosition(event.nativeEvent.contentOffset.y);
   };
-
+// Bu satırı kaldırın:
+const pdfViewerRef = useRef(null);
   const handleUndo = () => {
     if (paths.length === 0) return;
     
@@ -424,7 +445,7 @@ export default function DrawingScreen({ route, navigation }) {
         </View>
       )}
 
-,      <ScrollView
+      <ScrollView
         ref={scrollViewRef}
         style={styles.scrollContainer}
         contentContainerStyle={{ minHeight: canvasHeight }}
@@ -433,12 +454,31 @@ export default function DrawingScreen({ route, navigation }) {
         scrollEventThrottle={16}
       >
         <View style={[styles.canvasContainer, { height: canvasHeight }]}>
-,          <View style={[styles.drawingArea, { height: canvasHeight }]}>
-            {pdfUri && (
-              <View style={styles.pdfContainer}>
-                <PdfViewer uri={pdfUri} style={styles.pdfViewer} />
-              </View>
-            )}
+          <View style={[styles.drawingArea, { height: canvasHeight }]}>
+          {pdfUri && (
+  <View style={styles.pdfContainer}>
+    <PdfViewer
+      uri={pdfUri}
+      style={styles.pdfViewer}
+      onLoad={() => {
+        console.log('PDF başarıyla yüklendi!');
+        setPdfLoading(false);
+      }}
+      onError={(error) => {
+        console.error('PDF yükleme hatası:', error);
+        setPdfLoading(false);
+        setPdfError(error);
+        Alert.alert('PDF Hatası', `PDF yüklenirken bir sorun oluştu: ${error}`);
+      }}
+    />
+    {pdfLoading && (
+      <View style={styles.pdfLoadingOverlay}>
+        <ActivityIndicator size="large" color="#5561fa" />
+        <Text style={styles.pdfLoadingText}>PDF yükleniyor...</Text>
+      </View>
+    )}
+  </View>
+)}
             
             {showDotGrid && (
               <View style={styles.dotGridOverlay}>
@@ -635,6 +675,23 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 0,
+    backgroundColor: "#f8f8f8",
+  },
+  pdfLoadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  pdfLoadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#5561fa",
   },
   pdfViewer: {
     width: '100%',

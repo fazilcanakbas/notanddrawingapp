@@ -1,64 +1,42 @@
 import React from "react";
-import { View, TouchableOpacity, Text, Alert, StyleSheet } from "react-native";
+import { View, TouchableOpacity, Text, Alert } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { useNavigation } from "@react-navigation/native";
 
-export default function PdfPickerScreen() {
-  const navigation = useNavigation();
-
+export default function PdfPickerScreen({ navigation }) {
   const pickPdf = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "application/pdf",
-        copyToCacheDirectory: true,
-      });
+      const result = await DocumentPicker.getDocumentAsync({ type: "application/pdf" });
       
-      if (result.canceled) {
-        Alert.alert("PDF Seçimi", "Seçim iptal edildi.");
-        return;
-      }
-
+      console.log("PDF Seçim Sonucu:", result);
+      
       if (result.assets && result.assets.length > 0 && result.assets[0].uri) {
-        console.log("PDF seçildi:", result.assets[0].uri);
-        navigation.navigate("Drawing", { pdfUri: result.assets[0].uri });
+        const pdfUri = result.assets[0].uri;
+        console.log("Seçilen PDF URI:", pdfUri);
+        
+        // URI kontrolü yapalım
+        if (!pdfUri) {
+          Alert.alert("Hata", "PDF URI'si alınamadı.");
+          return;
+        }
+        
+        // DrawingScreen'e git ve URI'yi gönder
+        navigation.navigate("Drawing", { pdfUri });
       } else {
-        Alert.alert("Hata", "Dosya alınamadı veya dosya geçerli bir PDF değil.");
+        Alert.alert("Seçim iptal edildi veya dosya alınamadı.");
       }
-    } catch (error) {
-      console.error("PDF seçiminde hata:", error);
-      Alert.alert("Hata", "PDF seçilirken bir hata oluştu.");
+    } catch (error: unknown) {
+      console.error("PDF seçim hatası:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen bir hata';
+      Alert.alert("Hata", "PDF seçimi sırasında bir hata oluştu: " + errorMessage);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={pickPdf} style={styles.button}>
-        <Text style={styles.buttonText}>PDF Seç ve Üzerine Not Al</Text>
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <TouchableOpacity onPress={pickPdf} style={{ padding: 20, backgroundColor: "#5561fa", borderRadius: 12 }}>
+        <Text style={{ color: "#fff", fontWeight: "bold" }}>PDF Seç ve Üzerine Not </Text>
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f5f6fa",
-  },
-  button: {
-    padding: 20,
-    backgroundColor: "#5561fa",
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-});
